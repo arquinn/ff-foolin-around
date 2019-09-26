@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 from configparser import RawConfigParser
 from argparse import ArgumentParser
@@ -7,26 +7,11 @@ from pandas import DataFrame
 from operator import add
 from functools import reduce
 from adjustText import adjust_text
-from fontTools.ttLib import TTFont
 
 import pandas as pd
-import matplotlib
-matplotlib.use('module://mplcairo.qt')
-
 import matplotlib.pyplot as plt
 import matplotlib.font_manager as fm
 plt.style.use("fivethirtyeight")
-
-eprop = (fm.FontProperties(fname="NotoColorEmoji.ttf"), "NotoColorEmoji.ttf")
-
-tmp = matplotlib.font_manager.FontProperties(family=plt.rcParams["font.family"])
-dprop = (tmp, matplotlib.font_manager.findfont(tmp))
-
-def checkForChar(string):
-    # Hacky McHackerson:
-    if all(ord(c) < 128 for c in string):
-        return dprop[0]
-    return eprop[0]
 
 
 def get_name(team):
@@ -37,13 +22,21 @@ def get_name(team):
 def expected_wins(league, weeks):
     allWeeks = DataFrame(columns=["Team","Win","Exp Win"])
     for week in weeks:
+        print("getting scores for %d" %(week))
         scores = league.box_scores(week)
-        data = reduce(add,
-                      [[[week, get_name(m.home_team),
-                         m.home_score, m.home_score > m.away_score],\
-                        [week, get_name(m.away_team),
-                         m.away_score, m.away_score > m.home_score]]
-                       for m in scores])
+        data = []
+        for m in scores:
+            if m.home_team:
+                data.append([week, 
+                             get_name(m.home_team),
+                             m.home_score, 
+                             m.home_score > m.away_score])
+            if m.away_team:
+                data.append([week,
+                             get_name(m.away_team),
+                             m.away_score,
+                             m.away_score > m.home_score])
+
         df = DataFrame(data, columns=["Week","Team", "Points", "Win"])
         df = df.sort_values(by="Points")\
                .reset_index(drop=True)\
@@ -66,8 +59,7 @@ def draw_agg_dataframe(df):
 
     ann = []
     for x,y,val in zip(agg['Exp Wins'], agg['Wins'], agg.index.to_series()):
-        p = checkForChar(val)
-        ann.append(ax.text(x,y,val, fontproperties=p))
+        ann.append(ax.text(x,y,val))
 
     #identiy line:
     maxW = agg['Wins'].max()
@@ -109,6 +101,8 @@ def main():
 
 
     if args.week == 0:
+        
+        print("On week %d" %(league.current_week))
         ewins_df = expected_wins(league, range(1, league.nfl_week + 1))
     else:
         ewins_df = expected_wins(league, range(1, args.week + 1))
