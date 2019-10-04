@@ -3,7 +3,6 @@ from adjustText import adjust_text
 
 import pandas as pd
 import matplotlib.pyplot as plt
-import matplotlib.font_manager as fm
 plt.style.use("fivethirtyeight")
 
 
@@ -11,6 +10,7 @@ def ew_v_w(df):
     agg = df.rename(columns = {"Win":"Wins", "Exp Win": "Exp Wins"})\
             .sort_values(by="Exp Wins")
 
+    print("get plot")
     ax = agg.plot(kind="scatter", x="Exp Wins", y="Wins", title="Exp Wins vs. Wins")
 
     ann = []
